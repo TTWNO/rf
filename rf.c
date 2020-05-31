@@ -4,48 +4,46 @@
 #include <time.h>
 #include <stdlib.h>
 #include <stdbool.h>
+#include <sys/stat.h>
+#include <unistd.h>
+#include <sys/types.h>
 
-int files_in_dir(DIR* dp, struct dirent* entry, bool hidden_files){
+static int file_counter;
+static char** names;
+
+struct stat st;
+
+void add_to_num_of_files(struct dirent* entry, int fi)
+{
+  file_counter++;
+}
+
+void add_file_to_list(struct dirent* entry, int fi)
+{
+  strcpy(names[fi], entry->d_name);
+}
+
+
+int files_in_dir(DIR* dp, struct dirent* entry, bool hidden_files, void (*func)(struct dirent*, int)){
   int files = 0;
   while ((entry = readdir(dp))){
-    if (hidden_files){
-      if (!strcmp(entry->d_name, "..") == 0 &&
-          !strcmp(entry->d_name, ".") == 0){
-        files++;
-      }
-    } else {
-      if (entry->d_name[0] != '.'){
-        files++;
-      }
+    if (entry->d_name[0] != '.' ||
+        (hidden_files &&
+        !strcmp(entry->d_name, "..") == 0 &&
+        !strcmp(entry->d_name, ".") == 0)){
+      (*func)(entry, files);
+      ++files;
     }
   }
   return files;
-}
-
-void print_dir(DIR* dp, struct dirent* entry, int pe, bool hidden_files){
-  int files = 0;
-  while ((entry = readdir(dp))){
-    if (hidden_files){
-      if (!strcmp(entry->d_name, "..") == 0 &&
-          !strcmp(entry->d_name, ".") == 0){
-        files++;
-      }
-    } else {
-      if (entry->d_name[0] != '.'){
-        files++;
-      }
-    }
-    if (files == pe){
-      printf("%s\n", entry->d_name);
-      return;
-    }
-  }
 }
 
 int main(int argc, char** argv){
   DIR* dp;
   struct dirent* entry;
   bool hidden_files = false;
+
+  file_counter = 0;
 
   /* Best random thing I could come up with which is cross compileable 
    * Should be really random, even if it overflows :)*/
@@ -70,13 +68,20 @@ int main(int argc, char** argv){
     return -1;
   }
 
-  int files = files_in_dir(dp, entry, hidden_files); 
-  if (files == 0){
+  files_in_dir(dp, entry, hidden_files, add_to_num_of_files); 
+  if (file_counter == 0){
     fprintf(stderr, "directory is an empty directory.\n");
     return -1;
   }
   rewinddir(dp);
-  print_dir(dp, entry, 1+rand()/((RAND_MAX + 1u)/files), hidden_files);
+  names = malloc(sizeof(char*) * file_counter);
+  for (i = 0; i < file_counter; ++i)
+  {
+    names[i] = malloc(sizeof(char) * 256);
+  }
+  files_in_dir(dp, entry, hidden_files, add_file_to_list);
+  int rando = rand()/((RAND_MAX + 1u)/file_counter);
+  printf("%s\n", names[rando]);
 
   closedir(dp);
   return 0;
