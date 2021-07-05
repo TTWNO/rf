@@ -1,4 +1,7 @@
-default: all
+default: build
 
-all:
+build:
 	$(CC) -std=c89 rf.c -o rf
+
+install: build
+	cp rf /usr/bin/rf
