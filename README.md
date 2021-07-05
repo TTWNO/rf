@@ -17,8 +17,8 @@ Add a directory on the end of the command to run in any directory other than the
 ## TODO:
 
 1. Add man page.
-2. Allow for extra options like:
-  1. `-r` to select a random file recursively.
+2. `-r` to select a random file recursively.
+3. `-i` to take files from standard input (suggest piping with find).
 3. Don't depend on glibc (GNU C). Currently using getopt.
 
 ## Done:
